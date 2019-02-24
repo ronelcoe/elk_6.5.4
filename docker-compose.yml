@@ -1,0 +1,138 @@
+version: '2.2'
+services:
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:6.5.4
+    container_name: elastic_master
+    environment:
+      - node.name=elastic_master
+      - node.master=true
+      - node.data=true
+      - node.ingest=true
+      - discovery.zen.minimum_master_nodes=1
+      - cluster.name=docker-elk-cluster
+      - bootstrap.memory_lock=true
+      - xpack.monitoring.collection.enabled=true
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - "discovery.zen.ping.unicast.hosts: ['master.elastic.com', 'node2.elastic.com', 'node3.elastic.com']"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - elasticdata1:/usr/share/elasticsearch/data
+    ports:
+      - 9200:9200
+    networks:
+      elk_network_cluster:
+        ipv4_address: 192.168.1.5
+    extra_hosts:
+      - "kibana.com:127.0.0.1"
+      - "master.elastic.com:192.168.1.5"
+      - "node2.elastic.com:192.168.1.6"
+      - "node3.elastic.com:192.168.1.7"
+  elasticsearch2:
+    image: docker.elastic.co/elasticsearch/elasticsearch:6.5.4
+    container_name: elastic_node2
+    environment:
+      - node.name=elastic_node2
+      - node.master=false
+      - node.data=true
+      - node.ingest=true
+      - discovery.zen.minimum_master_nodes=1
+      - cluster.name=docker-elk-cluster
+      - bootstrap.memory_lock=true
+      - xpack.monitoring.collection.enabled=true
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - "discovery.zen.ping.unicast.hosts=master.elastic.com"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - elasticdata2:/usr/share/elasticsearch/data
+    networks:
+      elk_network_cluster:
+        ipv4_address: 192.168.1.6
+    extra_hosts:
+      - "kibana.local:127.0.0.1"
+      - "master.elastic.com:192.168.1.5"
+      - "node2.elastic.com:192.168.1.6"
+      - "node3.elastic.com:192.168.1.7"
+  elasticsearch3:
+    image: docker.elastic.co/elasticsearch/elasticsearch:6.5.4
+    container_name: elastic_node3
+    environment:
+      - node.name=elastic_node3
+      - node.master=false
+      - node.data=true
+      - node.ingest=true
+      - discovery.zen.minimum_master_nodes=1
+      - cluster.name=docker-elk-cluster
+      - bootstrap.memory_lock=true
+      - xpack.monitoring.collection.enabled=true
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - "discovery.zen.ping.unicast.hosts=master.elastic.com"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - elasticdata3:/usr/share/elasticsearch/data
+    networks:
+      elk_network_cluster:
+        ipv4_address: 192.168.1.7
+    extra_hosts:
+      - "master.elastic.com:192.168.1.5"
+      - "node2.elastic.com:192.168.1.6"
+      - "node3.elastic.com:192.168.1.7"
+  kibana:
+    image: docker.elastic.co/kibana/kibana:6.5.4
+    container_name: kibana
+    environment:
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - "SERVER_NAME=elasticsearch"
+      - "ELASTICSEARCH_URL=http://elasticsearch:9200"
+    volumes:
+    - kibana_data:/usr/share/kibana/data
+    ports:
+      - 5601:5601
+    networks:
+      elk_network_cluster:
+        ipv4_address: 192.168.1.8
+  logstash:
+    image: docker.elastic.co/logstash/logstash:6.5.4
+    container_name: logstash
+    environment:
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    volumes:
+    - logstash_data:/usr/share/logstash/data
+    networks:
+      elk_network_cluster:
+        ipv4_address: 192.168.1.9
+  filebeat:
+    image: docker.elastic.co/beats/filebeat:6.5.4
+    environment:
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    container_name: filebeat
+    networks:
+    - elk_network_cluster
+
+volumes:
+  elasticdata1:
+    driver: local
+  elasticdata2:
+    driver: local
+  elasticdata3:
+    driver: local
+  kibana_data:
+    driver: local
+  logstash_data:
+    driver: local
+
+networks:
+  elk_network_cluster:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 192.168.1.0/24
+          gateway: 192.168.1.1
