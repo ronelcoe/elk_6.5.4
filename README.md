@@ -1,4 +1,4 @@
-ELK Containers 6.3.2
+ELK Containers 6.5.4
 
 This docker compose file mimics cluster of elastic nodes to setup a dev or simulation environment runnin in docker. Each service is assigned with a static ip address for easy internal binding and discovering each other during build up.
 
